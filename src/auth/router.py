@@ -2,14 +2,16 @@ from fastapi import APIRouter,Response,Depends
 from .schemas import RegisterPayload,User,LoginPayload,UpdatePayload,Users
 from .utils import get_password_hash,verify_password,generate_jwt
 from .dependencies import authorize
+from pydantic import ValidationError
+import datetime
 
-router = APIRouter(
+
+Authrouter = APIRouter(
     prefix="/accounts",
-    tags = ["accounts"],
-    responses={404:{"description":"Not found"}}
+    tags = ["Accounts"],
 )
 
-@router.post("/register",status_code=201)
+@Authrouter.post("/register",status_code=201)
 def register(payload: RegisterPayload,response:Response):
 
     # Bad request , passwords didnt match
@@ -18,18 +20,22 @@ def register(payload: RegisterPayload,response:Response):
         return {"Status":"Error","Message":"Passwords do not match"}
     
     # Create an user
-    user = User(Username=payload.Username,
-                Email=payload.Email,
-                Password=get_password_hash(payload.Password),
-                Tags=payload.Tags,
-                FirstName=payload.FirstName,
-                LastName=payload.LastName)
+    try:
+        user = User(Username=payload.Username,
+                    Email=payload.Email,
+                    Password=get_password_hash(payload.Password),
+                    Tags=payload.Tags,
+                    FirstName=payload.FirstName,
+                    LastName=payload.LastName)
+        
+    except ValidationError:
+        response.status_code = 400
+        return {"Status":"Error","Message":"Invalid request body"}
     
     Users.append(user)
-    print(user)
-    return {"Status":"Success","Message":"Success","Id":user.Id}
+    return {"Status":"Success","Message":"user successfully registered","Id":user.Id}
 
-@router.post("/login",status_code=200)
+@Authrouter.post("/login",status_code=200)
 def login(response:Response,payload: LoginPayload):
 
     Email = payload.Email
@@ -49,10 +55,14 @@ def login(response:Response,payload: LoginPayload):
     return {"Status":"Error","Message":"Invalid credentials..Try again"}
 
 
-@router.put("/update",status_code=201)
-def protected_route(payload:UpdatePayload,user: User=Depends(authorize)):
+@Authrouter.put("/update",status_code=201)
+def update(payload:UpdatePayload,user: User=Depends(authorize)):
     user.FirstName = payload.FirstName
     user.LastName = payload.LastName
     user.Tags = payload.Tags
-    print(user)
     return {"Status":"Success","Message":"Profile Succesfully Updated"}
+
+@Authrouter.get("/logout",status_code=200)
+def logout(response:Response,user: User=Depends(authorize)):
+    response.set_cookie(key="jwt",value=None,expires=datetime.datetime.now(tz=datetime.timezone.utc)-datetime.timedelta(days=1))
+    return {"Status":"Success","Message":"Logged out successfully"}

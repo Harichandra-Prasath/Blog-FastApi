@@ -16,7 +16,7 @@ def authorize(request:Request,response:Response):
                                                         "Message":"JWT Expired"})
         except:
             raise HTTPException(status_code=401,detail={"Status":"Error",
-                                                        "Message":"Invalid Token"})
+                                                        "Message":"Invalid JWT Token...Login Required to perform this operation"})
     else:
         raise HTTPException(status_code=401,detail={"Status":"Error",
-                                                    "Message":"No session or session expired..Login and Try again"})
+                                                    "Message":"No session or session expired..Login Required to perform this operation"})
