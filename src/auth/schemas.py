@@ -11,7 +11,7 @@ class User(BaseModel):
     LastName: str
     Email: EmailStr 
     Password: str
-    Tags: list
+    Tags: list[str]
     model_config = ConfigDict(arbitrary_types_allowed=True,json_encoders={ObjectId: str})
 
 

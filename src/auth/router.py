@@ -35,7 +35,8 @@ async def register(payload: RegisterPayload,response:Response):
     
     # Save the model
     user = await userCollection.insert_one(_user.model_dump(by_alias=True,exclude=["Id"]))
-    return await userCollection.find_one(filter={"_id":user.inserted_id})
+    return {"Status":"Success","Message":"User registered Successfully","Id":str(user.inserted_id)}
+
 
 @Authrouter.post("/login",status_code=200)
 async def login(response:Response,payload: LoginPayload):
