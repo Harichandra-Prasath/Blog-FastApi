@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+    web:
+      build: .
+      ports:
+        - "8000:8000"
+      environment:
+        MONGODB_URL: mongodb://db:27017
+        SECRET: ${SECRET}
+      depends_on:
+        - db
+      
+    
+    db:
+      image: mongo 
+      expose:
+        - 27017
+      volumes:
+        - db_data:/data/db
+
+volumes:
+  db_data:
