@@ -1,6 +1,6 @@
 fastapi
-"uvicorn[standard]"
-"pydantic[email]"
+uvicorn[standard]
+pydantic[email]
 bcrypt
 pyjwt
-bson
+motor

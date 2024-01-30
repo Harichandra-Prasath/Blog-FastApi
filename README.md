@@ -14,7 +14,12 @@ python -m venv .venv
 ```bash
 pip install -r requirements.txt  
 ``` 
-- Optinally rename the db name and collections name in src/database.py as per your wish (Optional)
+- Create an .env file  
+```bash 
+MONGODB_URL=mongodb://localhost:27017
+SECRET= <Your secret for JWT>
+```
+- Optionally rename the db name and collections name in src/database.py as per your wish (Optional)
 
 **Make sure you have mongodb installed locally**  
   
@@ -50,17 +55,17 @@ Hit up /api/v1/docs to see the swagger documentaion of the project
 &nbsp;  
 - **Path:** `/accounts/logout`
 - **Method:** `GET`
-- **Authorization:** Requires a valid JWT token.
+- **Authorization:** Requires a valid JWT token.    
 &nbsp;
 - **Path:** `/accounts/update`
 - **Method:** `PUT`
-- **Authorization:** Requires a valid JWT token.
+- **Authorization:** Requires a valid JWT token.    
 &nbsp;
 - **Path:** `/accounts/profile`
 - **Method:** `GET`
-- **Authorization:** Requires a valid JWT token.
+- **Authorization:** Requires a valid JWT token.   
 
-#### 3. Blogs
+##### 3. Blogs
 
 - **Path:** `/blogs?page=..&limit=..`            Page and limit are intergers for pagination
 - **Methods:** `GET` 
