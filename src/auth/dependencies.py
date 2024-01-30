@@ -1,15 +1,18 @@
 from fastapi import Request,Response,HTTPException
 import jwt
-from .schemas import Users
+from ..database import userCollection
 
-def authorize(request:Request,response:Response):
+async def authorize(request:Request):
     token = request.cookies.get("jwt",None)
     if token:
         try:
             payload = jwt.decode(token, key="Secret",algorithms="HS256")
-            for user in Users:
-                if payload["username"]==user.Username:
-                    return user
+            user = await userCollection.find_one(filter={"Username":payload["username"]})
+            if user:
+                return user["_id"]
+            else:
+                raise HTTPException(status_code=404,detail={"Status":"Error",
+                                                            "Message":"User not found"})
 
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=401,detail={"Status":"Error",

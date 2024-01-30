@@ -1,18 +1,20 @@
-from pydantic import BaseModel,EmailStr,Field
+from pydantic import BaseModel,EmailStr,Field,ConfigDict
 from typing import Optional
-from uuid import uuid4,UUID
-Users = []
+from bson import ObjectId
 
+Users = []
 
 # Avoiding constraints on User Schema as constraints are imposed on payloads
 class User(BaseModel):
-    Id:  UUID = Field(default_factory=uuid4,frozen=True)
-    Username: str = Field(frozen=True)
+    Id: Optional[ObjectId] = Field(alias="_id",default=None)
+    Username: str 
     FirstName: str
     LastName: str
-    Email: EmailStr = Field(frozen=True)
-    Password: bytes
+    Email: EmailStr 
+    Password: str
     Tags: list
+    model_config = ConfigDict(arbitrary_types_allowed=True,json_encoders={ObjectId: str})
+
 
 class RegisterPayload(BaseModel):
     Username: str = Field(min_length=3,max_length=30)

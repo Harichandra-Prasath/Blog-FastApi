@@ -4,7 +4,8 @@ from .utils import get_password_hash,verify_password,generate_jwt
 from .dependencies import authorize
 from pydantic import ValidationError
 import datetime
-
+from ..database import userCollection
+from bson import ObjectId
 
 Authrouter = APIRouter(
     prefix="/accounts",
@@ -12,39 +13,40 @@ Authrouter = APIRouter(
 )
 
 @Authrouter.post("/register",status_code=201)
-def register(payload: RegisterPayload,response:Response):
+async def register(payload: RegisterPayload,response:Response):
 
     # Bad request , passwords didnt match
     if payload.Password!=payload.Confirm_password:
         response.status_code = 400
         return {"Status":"Error","Message":"Passwords do not match"}
     
-    # Create an user
     try:
-        user = User(Username=payload.Username,
+        # User instance
+        _user = User(Username=payload.Username,
                     Email=payload.Email,
                     Password=get_password_hash(payload.Password),
                     Tags=payload.Tags,
                     FirstName=payload.FirstName,
                     LastName=payload.LastName)
-        
+    
     except ValidationError:
         response.status_code = 400
         return {"Status":"Error","Message":"Invalid request body"}
     
-    Users.append(user)
-    return {"Status":"Success","Message":"user successfully registered","Id":user.Id}
+    # Save the model
+    user = await userCollection.insert_one(_user.model_dump(by_alias=True,exclude=["Id"]))
+    return await userCollection.find_one(filter={"_id":user.inserted_id})
 
 @Authrouter.post("/login",status_code=200)
-def login(response:Response,payload: LoginPayload):
+async def login(response:Response,payload: LoginPayload):
 
-    Email = payload.Email
-    for user in Users:
-        if user.Email==Email:
-            if verify_password(payload.Password,user.Password):
+    _Email = payload.Email
+    user = await userCollection.find_one(filter={"Email":_Email})
+    if user:
+            if verify_password(payload.Password,user["Password"]):
 
                 #Generate jwt with payload containing the username
-                _token = generate_jwt(user.Username)
+                _token = generate_jwt(user["Username"])
 
                 #setting cookie valid for 30 days
                 response.set_cookie(key="jwt",value=_token,max_age=30*24*60*60)
@@ -56,13 +58,14 @@ def login(response:Response,payload: LoginPayload):
 
 
 @Authrouter.put("/update",status_code=201)
-def update(payload:UpdatePayload,user: User=Depends(authorize)):
-    user.FirstName = payload.FirstName
-    user.LastName = payload.LastName
-    user.Tags = payload.Tags
+async def update(payload:UpdatePayload,user_id:ObjectId = Depends(authorize)):
+    
+    update_dict = {k:v for k,v in payload.model_dump().items()}
+    
+    _ = await userCollection.update_one({"_id":user_id},{"$set":update_dict})
     return {"Status":"Success","Message":"Profile Succesfully Updated"}
 
 @Authrouter.get("/logout",status_code=200)
-def logout(response:Response,user: User=Depends(authorize)):
+async def logout(response:Response,user_id:ObjectId = Depends(authorize)):
     response.set_cookie(key="jwt",value=None,expires=datetime.datetime.now(tz=datetime.timezone.utc)-datetime.timedelta(days=1))
     return {"Status":"Success","Message":"Logged out successfully"}
