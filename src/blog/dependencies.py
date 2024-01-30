@@ -6,7 +6,7 @@ from bson import ObjectId
 async def Is_owner(blog_id: str,user_id:ObjectId = Depends(authorize)):
     _blog = await blogCollection.find_one(filter={"_id":ObjectId(blog_id)})
     if _blog:
-        if _blog["Author_Id"]!=user_id:
+        if ObjectId(_blog["Author_Id"])!=user_id:
             raise HTTPException(status_code=403,detail={"Status":"Error",
                                                         "Message":"Forbidden...You dont have permission to perform this action"})
     else:   

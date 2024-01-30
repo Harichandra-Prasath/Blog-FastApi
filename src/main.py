@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from src.auth.router import Authrouter
 from src.blog.router import Blogrouter,Dashboard
 from src.blog.schemas import DashboardResponse
+import dotenv
+import os
+
+#set env variables
+dotenv.load_dotenv(".env")
 
 app = FastAPI()
 v1 = FastAPI()

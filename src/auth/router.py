@@ -1,7 +1,7 @@
 from fastapi import APIRouter,Response,Depends
 from .schemas import RegisterPayload,User,LoginPayload,UpdatePayload
-from .utils import get_password_hash,verify_password,generate_jwt
-from .dependencies import authorize
+from .utils import verify_password,generate_jwt
+from .dependencies import authorize,RegisterValidator
 from pydantic import ValidationError
 import datetime
 from ..database import userCollection
@@ -13,25 +13,7 @@ Authrouter = APIRouter(
 )
 
 @Authrouter.post("/register",status_code=201)
-async def register(payload: RegisterPayload,response:Response):
-
-    # Bad request , passwords didnt match
-    if payload.Password!=payload.Confirm_password:
-        response.status_code = 400
-        return {"Status":"Error","Message":"Passwords do not match"}
-    
-    try:
-        # User instance
-        _user = User(Username=payload.Username,
-                    Email=payload.Email,
-                    Password=get_password_hash(payload.Password),
-                    Tags=payload.Tags,
-                    FirstName=payload.FirstName,
-                    LastName=payload.LastName)
-    
-    except ValidationError:
-        response.status_code = 400
-        return {"Status":"Error","Message":"Invalid request body"}
+async def register(payload: RegisterPayload,_user:User=Depends(RegisterValidator)):    
     
     # Save the model
     user = await userCollection.insert_one(_user.model_dump(by_alias=True,exclude=["Id"]))
@@ -70,3 +52,8 @@ async def update(payload:UpdatePayload,user_id:ObjectId = Depends(authorize)):
 async def logout(response:Response,user_id:ObjectId = Depends(authorize)):
     response.set_cookie(key="jwt",value=None,expires=datetime.datetime.now(tz=datetime.timezone.utc)-datetime.timedelta(days=1))
     return {"Status":"Success","Message":"Logged out successfully"}
+
+@Authrouter.get("/profile",status_code=200,response_model=User,response_model_by_alias=False,response_model_exclude="Password")
+async def profile(response:Response,user_id:ObjectId = Depends(authorize)):
+    user = await userCollection.find_one(filter={"_id":user_id})
+    return user

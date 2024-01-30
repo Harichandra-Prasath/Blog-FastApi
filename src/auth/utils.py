@@ -1,6 +1,7 @@
 import bcrypt
 import jwt
 import datetime
+import os
 
 def get_password_hash(plain_password:str):
     salt = bcrypt.gensalt()
@@ -13,7 +14,7 @@ def verify_password(plain_password:str,hashed_password:str):
 def generate_jwt(username):
     token = jwt.encode({"username":username,
                         "exp":datetime.datetime.now(tz=datetime.timezone.utc)+datetime.timedelta(days=30)},
-                         key="Secret",
+                         key=os.getenv("SECRET"),
                          algorithm="HS256",
                          )
     return token

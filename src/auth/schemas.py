@@ -1,11 +1,11 @@
 from pydantic import BaseModel,EmailStr,Field,ConfigDict
 from typing import Optional
 from bson import ObjectId
-
+from ..blog.schemas import pyobjectId
 
 # Avoiding constraints on User Schema as constraints are imposed on payloads
 class User(BaseModel):
-    Id: Optional[ObjectId] = Field(alias="_id",default=None)
+    Id: Optional[pyobjectId] = Field(alias="_id",default=None)
     Username: str 
     FirstName: str
     LastName: str

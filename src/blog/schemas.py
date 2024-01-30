@@ -1,13 +1,14 @@
-from pydantic import BaseModel,Field,ConfigDict
+from pydantic import BaseModel,Field,ConfigDict,BeforeValidator
 import datetime 
-from typing import Optional
+from typing import Optional,Annotated
 from bson import ObjectId
 
+pyobjectId = Annotated[str,BeforeValidator(str)]
 
 class Blog(BaseModel):
-    Id: Optional[ObjectId] = Field(alias="_id",default=None)
+    Id: Optional[pyobjectId] = Field(alias="_id",default=None)
     Author: str
-    Author_Id: ObjectId 
+    Author_Id: str 
     Content: str
     CreatedAt: datetime.datetime = Field(default_factory=datetime.datetime.now)
     LastUpdated: datetime.datetime = Field(default_factory=datetime.datetime.now)

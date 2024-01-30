@@ -25,7 +25,7 @@ async def create(payload:BlogPayload,response:Response,user_id:ObjectId = Depend
     _author = await userCollection.find_one(filter={"_id":Author_id})
     try:
         _blog = Blog(
-            Author_Id=Author_id,
+            Author_Id=str(Author_id),
             Author = _author["Username"],
             Content=payload.Content,
             Tags=payload.Tags
@@ -40,9 +40,9 @@ async def create(payload:BlogPayload,response:Response,user_id:ObjectId = Depend
 async def retrieve(response:Response,blog_id:str): 
 
     _blog  = await blogCollection.find_one(filter={"_id":ObjectId(blog_id)})
+    print(_blog)
     if _blog:
         return _blog
-
     response.status_code=404
     return {"Status":"Error","Message":"Resource not found on the server"}
 
