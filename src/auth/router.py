@@ -1,5 +1,5 @@
 from fastapi import APIRouter,Response,Depends
-from .schemas import RegisterPayload,User,LoginPayload,UpdatePayload,Users
+from .schemas import RegisterPayload,User,LoginPayload,UpdatePayload
 from .utils import get_password_hash,verify_password,generate_jwt
 from .dependencies import authorize
 from pydantic import ValidationError

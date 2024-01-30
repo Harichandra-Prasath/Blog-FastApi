@@ -2,7 +2,6 @@ from pydantic import BaseModel,EmailStr,Field,ConfigDict
 from typing import Optional
 from bson import ObjectId
 
-Users = []
 
 # Avoiding constraints on User Schema as constraints are imposed on payloads
 class User(BaseModel):
