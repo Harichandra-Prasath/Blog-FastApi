@@ -1,22 +1,23 @@
 from fastapi import APIRouter,Response,Depends
-from ..auth.schemas import User
 from ..auth.dependencies import authorize
-from .schemas import Blog,BlogPayload,Blogs
+from .schemas import Blog,BlogPayload
 from pydantic import ValidationError
-from uuid import UUID
-import datetime
+from ..database import blogCollection
+from bson import ObjectId
+from .dependencies import Is_owner
+
 
 Blogrouter = APIRouter(
-    prefix="/blog",
+    prefix="/blogs",
     tags=["Blogs"]
 )
 
 
 @Blogrouter.post("/create",status_code=201)
-def create(payload:BlogPayload,response:Response,user:User= Depends(authorize)):
-    Author_id = user.Id       # Current logged in user as the author
+async def create(payload:BlogPayload,response:Response,user_id:ObjectId = Depends(authorize)):
+    Author_id = user_id       # Current logged in user as the author
     try:
-        blog = Blog(
+        _blog = Blog(
             Author=Author_id,
             Content=payload.Content,
             Tags=payload.Tags
@@ -24,41 +25,28 @@ def create(payload:BlogPayload,response:Response,user:User= Depends(authorize)):
     except ValidationError:
         response.status_code = 400
         return {"status":"error","Message":"Invalid request body"}
-    Blogs.append(blog)
-    return {"status":"Success","Message":"Blog successfully posted","Id":blog.Id}
+    blog = await blogCollection.insert_one(_blog.model_dump(by_alias=True,exclude=["Id"]))
+    return {"status":"Success","Message":"Blog successfully posted","Id":str(blog.inserted_id)}
 
-@Blogrouter.get("/{blog_id}",status_code=200,response_model=Blog)
-def retrieve(response:Response,blog_id:UUID): 
-    for blog in Blogs:
-        if blog.Id==blog_id:
-            return blog
+@Blogrouter.get("/retrieve/{blog_id}",status_code=200,response_model=Blog,response_model_by_alias=False)
+async def retrieve(response:Response,blog_id:str): 
+
+    _blog  = await blogCollection.find_one(filter={"_id":ObjectId(blog_id)})
+    if _blog:
+        return _blog
+
     response.status_code=404
     return {"Status":"Error","Message":"Resource not found on the server"}
 
 @Blogrouter.put("/update/{blog_id}",status_code=201)
-def edit(payload:BlogPayload,response:Response,blog_id:UUID,user:User=Depends(authorize)):
-    for blog in Blogs:
-        if blog.Id==blog_id:
-            if blog.Author!=user.Id:
-                response.status_code=403      # Current logged user is not the author
-                return {"Status":"Error","Message":"Forbidden. You dont have permission for this action"}
-            blog.Content = payload.Content
-            blog.Tags = payload.Tags
-            blog.LastUpdated = datetime.datetime.now()
-            return {"Status":"Success","Message":"Blog has been updated successfully"}
+async def edit(payload:BlogPayload,blog_id:str,_:None = Depends(Is_owner)):
+    update_dict = {k:v for k,v in payload.model_dump().items()}
     
-    response.status_code=404
-    return {"Status":"Success","Message":"Resource not found on the server"}
-
+    _ = await blogCollection.update_one({"_id":ObjectId(blog_id)},{"$set":update_dict})
+    return {"Status":"Success","Message":"Blog Succesfully Updated"}
 
 @Blogrouter.delete("/remove/{blog_id}",status_code=204)
-def delete(response:Response,blog_id:UUID,user:User=Depends(authorize)):
-    for blog in Blogs:
-        if blog.Id==blog_id:
-            if blog.Author!=user.Id:
-                response.status_code=403      # Current logged user is not the author
-                return {"Status":"Error","Message":"Forbidden. You dont have permission for this action"}
-            Blogs.remove(blog)
+async def delete(blog_id:str,_:None=Depends(Is_owner)):
+    _ = await blogCollection.delete_one(filter={"_id":ObjectId(blog_id)})
+
     
-    response.status_code=404
-    return {"Status":"Success","Message":"Resource not found on the server"}

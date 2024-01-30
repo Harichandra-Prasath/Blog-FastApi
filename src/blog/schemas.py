@@ -1,18 +1,17 @@
-from pydantic import BaseModel,Field
-from uuid import UUID,uuid4
+from pydantic import BaseModel,Field,ConfigDict
 import datetime 
 from typing import Optional
+from bson import ObjectId
 
-
-Blogs = []
 
 class Blog(BaseModel):
-    Id: UUID = Field(default_factory=uuid4,frozen=True)
-    Author: UUID = Field(frozen=True)
+    Id: Optional[ObjectId] = Field(alias="_id",default=None)
+    Author: ObjectId 
     Content: str
-    CreatedAt: datetime.datetime = Field(default_factory=datetime.datetime.now,frozen=True)
+    CreatedAt: datetime.datetime = Field(default_factory=datetime.datetime.now)
     LastUpdated: datetime.datetime = Field(default_factory=datetime.datetime.now)
     Tags: list
+    model_config = ConfigDict(arbitrary_types_allowed=True,json_encoders={ObjectId: str})
 
 class BlogPayload(BaseModel):
     Content:str = Field(min_length=10,max_length=500)
